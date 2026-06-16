@@ -698,7 +698,7 @@ function App() {
   }, "Your shop is currently at", " ", /*#__PURE__*/React.createElement("a", {
     className: "mono text-blue-600 hover:underline underline-offset-2 text-xs",
     href: "#"
-  }, "example.swag42.shop"))), /*#__PURE__*/React.createElement("div", {
+  }, state === "active" && domain ? domain : "example.swag42.shop"))), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-2xl border border-gray-200 shadow-sm p-8 min-h-[320px]"
   }, /*#__PURE__*/React.createElement(Pipeline, {
     currentStep: stepIndex,

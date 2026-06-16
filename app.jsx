@@ -569,7 +569,9 @@ function App() {
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Custom Domain</h1>
           <p className="text-sm text-gray-500">
             Your shop is currently at{" "}
-            <a className="mono text-blue-600 hover:underline underline-offset-2 text-xs" href="#">example.swag42.shop</a>
+            <a className="mono text-blue-600 hover:underline underline-offset-2 text-xs" href="#">
+              {state === "active" && domain ? domain : "example.swag42.shop"}
+            </a>
           </p>
         </div>
 
