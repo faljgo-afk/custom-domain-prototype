@@ -421,9 +421,6 @@ function FailedState({ domain, errorType, onChangeDomain }) {
         >
           Try again
         </button>
-        <a href="#" className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 hover:underline underline-offset-2">
-          View documentation <IconExternal />
-        </a>
       </div>
     </div>
   );

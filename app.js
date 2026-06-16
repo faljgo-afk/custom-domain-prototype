@@ -537,10 +537,7 @@ function FailedState({
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onChangeDomain,
     className: "px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800"
-  }, "Try again"), /*#__PURE__*/React.createElement("a", {
-    href: "#",
-    className: "inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 hover:underline underline-offset-2"
-  }, "View documentation ", /*#__PURE__*/React.createElement(IconExternal, null))));
+  }, "Try again")));
 }
 function DebugPanel({
   state,
