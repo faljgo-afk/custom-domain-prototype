@@ -3,26 +3,6 @@ const {
 } = React;
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
-const IconGlobe = () => /*#__PURE__*/React.createElement("svg", {
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: "2",
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: "w-5 h-5"
-}, /*#__PURE__*/React.createElement("circle", {
-  cx: "12",
-  cy: "12",
-  r: "10"
-}), /*#__PURE__*/React.createElement("line", {
-  x1: "2",
-  y1: "12",
-  x2: "22",
-  y2: "12"
-}), /*#__PURE__*/React.createElement("path", {
-  d: "M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
-}));
 const IconCheck = ({
   size = 5,
   color = "text-emerald-500"
@@ -110,22 +90,6 @@ const IconSpinner = ({
   fill: "currentColor",
   d: "M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
 }));
-const IconArrowRight = () => /*#__PURE__*/React.createElement("svg", {
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: "2",
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: "w-4 h-4"
-}, /*#__PURE__*/React.createElement("line", {
-  x1: "5",
-  y1: "12",
-  x2: "19",
-  y2: "12"
-}), /*#__PURE__*/React.createElement("polyline", {
-  points: "12 5 19 12 12 19"
-}));
 const IconExternal = () => /*#__PURE__*/React.createElement("svg", {
   viewBox: "0 0 24 24",
   fill: "none",
@@ -145,6 +109,68 @@ const IconExternal = () => /*#__PURE__*/React.createElement("svg", {
   y2: "3"
 }));
 
+// ─── Pipeline ─────────────────────────────────────────────────────────────────
+const STEPS = [{
+  label: "Enter domain"
+}, {
+  label: "Configure DNS"
+}, {
+  label: "SSL certificate"
+}, {
+  label: "Active"
+}];
+function Pipeline({
+  currentStep,
+  failed
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-0 mb-8"
+  }, STEPS.map((step, i) => {
+    const done = i < currentStep;
+    const active = i === currentStep;
+    const isError = failed && i === currentStep;
+    return /*#__PURE__*/React.createElement(React.Fragment, {
+      key: i
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-2"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: `w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 transition-all ${isError ? "bg-red-100 text-red-600 ring-2 ring-red-300" : done ? "bg-emerald-500 text-white" : active ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-400"}`
+    }, isError ? /*#__PURE__*/React.createElement("svg", {
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "3",
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      className: "w-3 h-3"
+    }, /*#__PURE__*/React.createElement("line", {
+      x1: "18",
+      y1: "6",
+      x2: "6",
+      y2: "18"
+    }), /*#__PURE__*/React.createElement("line", {
+      x1: "6",
+      y1: "6",
+      x2: "18",
+      y2: "18"
+    })) : done ? /*#__PURE__*/React.createElement("svg", {
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "3",
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      className: "w-3 h-3"
+    }, /*#__PURE__*/React.createElement("polyline", {
+      points: "20 6 9 17 4 12"
+    })) : i + 1), /*#__PURE__*/React.createElement("span", {
+      className: `text-sm whitespace-nowrap ${isError ? "text-red-600 font-medium" : active ? "text-gray-900 font-medium" : done ? "text-gray-500" : "text-gray-400"}`
+    }, step.label)), i < STEPS.length - 1 && /*#__PURE__*/React.createElement("div", {
+      className: `flex-1 h-px mx-3 min-w-[24px] ${done ? "bg-emerald-300" : "bg-gray-200"}`
+    }));
+  }));
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function validateDomain(value) {
   const v = value.trim();
@@ -152,7 +178,7 @@ function validateDomain(value) {
   if (/^https?:\/\//i.test(v)) return "Remove the http:// or https:// prefix";
   if (v.endsWith("/")) return "Remove the trailing slash";
   if (v.includes(" ")) return "Domain cannot contain spaces";
-  if (!/^[a-z0-9]([a-z0-9\-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9\-]*[a-z0-9])?)+$/i.test(v)) return "Enter a valid domain, e.g. shop.yourcompany.com";
+  if (!/^[a-z0-9]([a-z0-9\-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9\-]*[a-z0-9])?)+$/i.test(v)) return "Enter a valid domain, e.g. yourcompany.com or shop.yourcompany.com";
   return "";
 }
 function genToken() {
@@ -178,26 +204,6 @@ function CopyButton({
 
 // ─── State views ──────────────────────────────────────────────────────────────
 
-function EmptyState({
-  onConnect
-}) {
-  return /*#__PURE__*/React.createElement("div", {
-    className: "fade-in flex flex-col items-center text-center py-16 px-8"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-500 mb-5"
-  }, /*#__PURE__*/React.createElement(IconGlobe, null)), /*#__PURE__*/React.createElement("h2", {
-    className: "text-xl font-semibold text-gray-900 mb-2"
-  }, "Use your own domain"), /*#__PURE__*/React.createElement("p", {
-    className: "text-gray-500 text-sm max-w-md leading-relaxed mb-8"
-  }, "Connect a custom domain so your shop is accessible at ", /*#__PURE__*/React.createElement("span", {
-    className: "mono text-gray-700"
-  }, "yourcompany.com"), " or ", /*#__PURE__*/React.createElement("span", {
-    className: "mono text-gray-700"
-  }, "shop.yourcompany.com"), " instead of a Swag42 subdomain. SSL is provisioned automatically."), /*#__PURE__*/React.createElement("button", {
-    onClick: onConnect,
-    className: "inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
-  }, "Connect custom domain ", /*#__PURE__*/React.createElement(IconArrowRight, null)));
-}
 function ConnectForm({
   onSubmit,
   initialDomain = "",
@@ -217,8 +223,12 @@ function ConnectForm({
   }, /*#__PURE__*/React.createElement("h2", {
     className: "text-xl font-semibold text-gray-900 mb-1"
   }, "Connect a custom domain"), /*#__PURE__*/React.createElement("p", {
-    className: "text-gray-500 text-sm mb-6"
-  }, "Enter the domain you'd like to use for your shop — root domain or subdomain."), /*#__PURE__*/React.createElement("div", {
+    className: "text-gray-500 text-sm mb-6 leading-relaxed"
+  }, "Use your own domain — ", /*#__PURE__*/React.createElement("span", {
+    className: "mono text-gray-700 text-xs"
+  }, "yourcompany.com"), " or ", /*#__PURE__*/React.createElement("span", {
+    className: "mono text-gray-700 text-xs"
+  }, "shop.yourcompany.com"), " — instead of a Swag42 subdomain. SSL is provisioned automatically."), /*#__PURE__*/React.createElement("div", {
     className: "mb-1"
   }, /*#__PURE__*/React.createElement("label", {
     className: "block text-sm font-medium text-gray-700 mb-1.5"
@@ -280,7 +290,7 @@ function PendingState({
 }) {
   const [checking, setChecking] = useState(false);
   const [checkedOnce, setCheckedOnce] = useState(false);
-  const subdomain = domain.split(".")[0];
+  const subdomain = domain.includes(".") && domain.split(".").length > 2 ? domain.split(".")[0] : "@";
   const handleCheck = () => {
     setChecking(true);
     setTimeout(() => {
@@ -539,11 +549,11 @@ function FailedState({
     className: "px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800"
   }, "Try again")));
 }
+
+// ─── Debug Panel ──────────────────────────────────────────────────────────────
 function DebugPanel({
   state,
   setState,
-  domain,
-  setDomain,
   failureType,
   setFailureType,
   simulateSuccess,
@@ -553,9 +563,9 @@ function DebugPanel({
   onReset
 }) {
   const [open, setOpen] = useState(true);
-  const states = ["empty", "pending", "ssl_provisioning", "active", "failed"];
+  const states = ["form", "pending", "ssl_provisioning", "active", "failed"];
   const stateLabels = {
-    empty: "Empty",
+    form: "Form",
     pending: "Pending",
     ssl_provisioning: "SSL Provisioning",
     active: "Active",
@@ -621,45 +631,46 @@ function DebugPanel({
     className: "w-full px-2 py-1.5 rounded text-xs font-medium bg-red-900/60 text-red-300 hover:bg-red-900 transition-all border border-red-800/50"
   }, "Reset all")))));
 }
+
+// ─── Step index per state ─────────────────────────────────────────────────────
+function getStepIndex(state) {
+  if (state === "form") return 0;
+  if (state === "pending" || state === "failed") return 1;
+  if (state === "ssl_provisioning") return 2;
+  if (state === "active") return 3;
+  return 0;
+}
+
+// ─── Main App ─────────────────────────────────────────────────────────────────
 function App() {
-  const [state, setState] = useState("empty");
+  const [state, setState] = useState("form");
   const [domain, setDomain] = useState("");
-  const [showForm, setShowForm] = useState(false);
   const [verifyToken] = useState(genToken);
   const [failureType, setFailureType] = useState("cname");
   const [simulateSuccess, setSimulateSuccess] = useState(false);
-  const gotoState = s => {
-    setState(s);
-    setShowForm(false);
-  };
+  const gotoState = s => setState(s);
   const handleSubmit = d => {
     setDomain(d);
-    setShowForm(false);
     setState("pending");
   };
-  const handleChangeDomain = () => {
-    setState("empty");
-    setShowForm(true);
-  };
+  const handleChangeDomain = () => setState("form");
   const handleRemove = () => {
-    setState("empty");
+    setState("form");
     setDomain("");
-    setShowForm(false);
   };
   const handleAutofill = () => {
     setDomain("shop.acme-corp.com");
-    if (state === "empty") setShowForm(true);
+    if (state === "form") setState("form");
   };
   const handleResetAutofill = () => {
-    setState("empty");
     setDomain("shop.acme-corp.com");
-    setShowForm(true);
+    setState("form");
   };
   const handleReset = () => {
-    setState("empty");
+    setState("form");
     setDomain("");
-    setShowForm(false);
   };
+  const stepIndex = getStepIndex(state);
   return /*#__PURE__*/React.createElement("div", {
     className: "min-h-screen bg-gray-50"
   }, /*#__PURE__*/React.createElement("div", {
@@ -689,9 +700,10 @@ function App() {
     href: "#"
   }, "example.swag42.shop"))), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-2xl border border-gray-200 shadow-sm p-8 min-h-[320px]"
-  }, state === "empty" && !showForm && /*#__PURE__*/React.createElement(EmptyState, {
-    onConnect: () => setShowForm(true)
-  }), state === "empty" && showForm && /*#__PURE__*/React.createElement(ConnectForm, {
+  }, /*#__PURE__*/React.createElement(Pipeline, {
+    currentStep: stepIndex,
+    failed: state === "failed"
+  }), state === "form" && /*#__PURE__*/React.createElement(ConnectForm, {
     onSubmit: handleSubmit,
     initialDomain: domain,
     onAutofill: d => setDomain(d)
@@ -715,15 +727,13 @@ function App() {
   }))), /*#__PURE__*/React.createElement(DebugPanel, {
     state: state,
     setState: gotoState,
-    domain: domain,
-    setDomain: setDomain,
     failureType: failureType,
     setFailureType: setFailureType,
+    simulateSuccess: simulateSuccess,
+    setSimulateSuccess: setSimulateSuccess,
     onAutofill: handleAutofill,
     onResetAutofill: handleResetAutofill,
-    onReset: handleReset,
-    simulateSuccess: simulateSuccess,
-    setSimulateSuccess: setSimulateSuccess
+    onReset: handleReset
   }));
 }
 ReactDOM.createRoot(document.getElementById("root")).render(/*#__PURE__*/React.createElement(App, null));

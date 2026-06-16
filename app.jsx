@@ -1,12 +1,6 @@
 const { useState } = React;
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
-const IconGlobe = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-    <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
-    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-  </svg>
-);
 const IconCheck = ({ size = 5, color = "text-emerald-500" }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`w-${size} h-${size} ${color}`}>
     <polyline points="20 6 9 17 4 12"/>
@@ -34,17 +28,63 @@ const IconSpinner = ({ size = 5, color = "text-blue-500" }) => (
     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
   </svg>
 );
-const IconArrowRight = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-  </svg>
-);
 const IconExternal = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
     <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
     <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
   </svg>
 );
+
+// ─── Pipeline ─────────────────────────────────────────────────────────────────
+const STEPS = [
+  { label: "Enter domain" },
+  { label: "Configure DNS" },
+  { label: "SSL certificate" },
+  { label: "Active" },
+];
+
+function Pipeline({ currentStep, failed }) {
+  return (
+    <div className="flex items-center gap-0 mb-8">
+      {STEPS.map((step, i) => {
+        const done = i < currentStep;
+        const active = i === currentStep;
+        const isError = failed && i === currentStep;
+
+        return (
+          <React.Fragment key={i}>
+            <div className="flex items-center gap-2">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 transition-all ${
+                isError
+                  ? "bg-red-100 text-red-600 ring-2 ring-red-300"
+                  : done
+                  ? "bg-emerald-500 text-white"
+                  : active
+                  ? "bg-gray-900 text-white"
+                  : "bg-gray-100 text-gray-400"
+              }`}>
+                {isError
+                  ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  : done
+                  ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
+                  : i + 1
+                }
+              </div>
+              <span className={`text-sm whitespace-nowrap ${
+                isError ? "text-red-600 font-medium" : active ? "text-gray-900 font-medium" : done ? "text-gray-500" : "text-gray-400"
+              }`}>
+                {step.label}
+              </span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div className={`flex-1 h-px mx-3 min-w-[24px] ${done ? "bg-emerald-300" : "bg-gray-200"}`} />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function validateDomain(value) {
@@ -54,7 +94,7 @@ function validateDomain(value) {
   if (v.endsWith("/")) return "Remove the trailing slash";
   if (v.includes(" ")) return "Domain cannot contain spaces";
   if (!/^[a-z0-9]([a-z0-9\-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9\-]*[a-z0-9])?)+$/i.test(v))
-    return "Enter a valid domain, e.g. shop.yourcompany.com";
+    return "Enter a valid domain, e.g. yourcompany.com or shop.yourcompany.com";
   return "";
 }
 
@@ -84,26 +124,6 @@ function CopyButton({ value }) {
 
 // ─── State views ──────────────────────────────────────────────────────────────
 
-function EmptyState({ onConnect }) {
-  return (
-    <div className="fade-in flex flex-col items-center text-center py-16 px-8">
-      <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-500 mb-5">
-        <IconGlobe />
-      </div>
-      <h2 className="text-xl font-semibold text-gray-900 mb-2">Use your own domain</h2>
-      <p className="text-gray-500 text-sm max-w-md leading-relaxed mb-8">
-        Connect a custom domain so your shop is accessible at <span className="mono text-gray-700">yourcompany.com</span> or <span className="mono text-gray-700">shop.yourcompany.com</span> instead of a Swag42 subdomain. SSL is provisioned automatically.
-      </p>
-      <button
-        onClick={onConnect}
-        className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
-      >
-        Connect custom domain <IconArrowRight />
-      </button>
-    </div>
-  );
-}
-
 function ConnectForm({ onSubmit, initialDomain = "", onAutofill }) {
   const [value, setValue] = useState(initialDomain);
   const [touched, setTouched] = useState(!!initialDomain);
@@ -119,7 +139,9 @@ function ConnectForm({ onSubmit, initialDomain = "", onAutofill }) {
   return (
     <div className="fade-in max-w-lg">
       <h2 className="text-xl font-semibold text-gray-900 mb-1">Connect a custom domain</h2>
-      <p className="text-gray-500 text-sm mb-6">Enter the domain you'd like to use for your shop — root domain or subdomain.</p>
+      <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+        Use your own domain — <span className="mono text-gray-700 text-xs">yourcompany.com</span> or <span className="mono text-gray-700 text-xs">shop.yourcompany.com</span> — instead of a Swag42 subdomain. SSL is provisioned automatically.
+      </p>
 
       <div className="mb-1">
         <label className="block text-sm font-medium text-gray-700 mb-1.5">Domain</label>
@@ -187,7 +209,9 @@ function PendingState({ domain, verifyToken, onCheck, onChangeDomain, simulateSu
   const [checking, setChecking] = useState(false);
   const [checkedOnce, setCheckedOnce] = useState(false);
 
-  const subdomain = domain.split(".")[0];
+  const subdomain = domain.includes(".") && domain.split(".").length > 2
+    ? domain.split(".")[0]
+    : "@";
 
   const handleCheck = () => {
     setChecking(true);
@@ -354,18 +378,8 @@ function ActiveState({ domain, onRemove }) {
               Your shop will revert to <span className="mono text-gray-700">example.swag42.shop</span>. This action cannot be undone.
             </p>
             <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => { setShowModal(false); onRemove(); }}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600"
-              >
-                Remove
-              </button>
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+              <button onClick={() => { setShowModal(false); onRemove(); }} className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600">Remove</button>
             </div>
           </div>
         </div>
@@ -390,9 +404,7 @@ function FailedState({ domain, errorType, onChangeDomain }) {
 
       <div className="space-y-2 mb-6">
         <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border ${isCname ? "border-red-200 bg-red-50" : "border-emerald-200 bg-emerald-50"}`}>
-          <div className="mt-0.5">
-            {isCname ? <IconX size={4} /> : <IconCheck size={4} color="text-emerald-500" />}
-          </div>
+          <div className="mt-0.5">{isCname ? <IconX size={4} /> : <IconCheck size={4} color="text-emerald-500" />}</div>
           <div>
             <p className={`text-sm font-medium ${isCname ? "text-red-700" : "text-emerald-700"}`}>CNAME record</p>
             <p className={`text-xs mt-0.5 ${isCname ? "text-red-500" : "text-emerald-500"}`}>
@@ -402,9 +414,7 @@ function FailedState({ domain, errorType, onChangeDomain }) {
         </div>
 
         <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border ${!isCname ? "border-red-200 bg-red-50" : "border-emerald-200 bg-emerald-50"}`}>
-          <div className="mt-0.5">
-            {!isCname ? <IconX size={4} /> : <IconCheck size={4} color="text-emerald-500" />}
-          </div>
+          <div className="mt-0.5">{!isCname ? <IconX size={4} /> : <IconCheck size={4} color="text-emerald-500" />}</div>
           <div>
             <p className={`text-sm font-medium ${!isCname ? "text-red-700" : "text-emerald-700"}`}>TXT verification record</p>
             <p className={`text-xs mt-0.5 ${!isCname ? "text-red-500" : "text-emerald-500"}`}>
@@ -415,10 +425,7 @@ function FailedState({ domain, errorType, onChangeDomain }) {
       </div>
 
       <div className="flex items-center gap-4">
-        <button
-          onClick={onChangeDomain}
-          className="px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800"
-        >
+        <button onClick={onChangeDomain} className="px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800">
           Try again
         </button>
       </div>
@@ -426,18 +433,16 @@ function FailedState({ domain, errorType, onChangeDomain }) {
   );
 }
 
-function DebugPanel({ state, setState, domain, setDomain, failureType, setFailureType, simulateSuccess, setSimulateSuccess, onAutofill, onResetAutofill, onReset }) {
+// ─── Debug Panel ──────────────────────────────────────────────────────────────
+function DebugPanel({ state, setState, failureType, setFailureType, simulateSuccess, setSimulateSuccess, onAutofill, onResetAutofill, onReset }) {
   const [open, setOpen] = useState(true);
-  const states = ["empty", "pending", "ssl_provisioning", "active", "failed"];
-  const stateLabels = { empty: "Empty", pending: "Pending", ssl_provisioning: "SSL Provisioning", active: "Active", failed: "Failed" };
+  const states = ["form", "pending", "ssl_provisioning", "active", "failed"];
+  const stateLabels = { form: "Form", pending: "Pending", ssl_provisioning: "SSL Provisioning", active: "Active", failed: "Failed" };
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
       <div className={`bg-gray-950 text-gray-100 rounded-xl shadow-2xl border border-gray-800 transition-all overflow-hidden ${open ? "w-64" : "w-auto"}`}>
-        <button
-          onClick={() => setOpen(o => !o)}
-          className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-900"
-        >
+        <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-900">
           <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Debug panel</span>
           <span className="text-gray-500 text-xs">{open ? "▼" : "▲"}</span>
         </button>
@@ -448,15 +453,8 @@ function DebugPanel({ state, setState, domain, setDomain, failureType, setFailur
               <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">State</p>
               <div className="grid grid-cols-2 gap-1">
                 {states.map(s => (
-                  <button
-                    key={s}
-                    onClick={() => setState(s)}
-                    className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${
-                      state === s
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                    }`}
-                  >
+                  <button key={s} onClick={() => setState(s)}
+                    className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${state === s ? "bg-blue-500 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}>
                     {stateLabels[s]}
                   </button>
                 ))}
@@ -466,12 +464,8 @@ function DebugPanel({ state, setState, domain, setDomain, failureType, setFailur
             <div>
               <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Quick fill</p>
               <div className="space-y-1">
-                <button onClick={onAutofill} className="w-full px-2 py-1.5 rounded text-xs font-medium bg-gray-800 text-gray-300 hover:bg-gray-700 text-left">
-                  Autofill domain
-                </button>
-                <button onClick={onResetAutofill} className="w-full px-2 py-1.5 rounded text-xs font-medium bg-gray-800 text-gray-300 hover:bg-gray-700 text-left">
-                  Reset & autofill
-                </button>
+                <button onClick={onAutofill} className="w-full px-2 py-1.5 rounded text-xs font-medium bg-gray-800 text-gray-300 hover:bg-gray-700 text-left">Autofill domain</button>
+                <button onClick={onResetAutofill} className="w-full px-2 py-1.5 rounded text-xs font-medium bg-gray-800 text-gray-300 hover:bg-gray-700 text-left">Reset & autofill</button>
               </div>
             </div>
 
@@ -479,20 +473,12 @@ function DebugPanel({ state, setState, domain, setDomain, failureType, setFailur
               <div className="fade-in">
                 <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Check verification</p>
                 <div className="space-y-1">
-                  <button
-                    onClick={() => setSimulateSuccess(false)}
-                    className={`w-full px-2 py-1.5 rounded text-xs font-medium text-left transition-all ${
-                      !simulateSuccess ? "bg-gray-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                    }`}
-                  >
+                  <button onClick={() => setSimulateSuccess(false)}
+                    className={`w-full px-2 py-1.5 rounded text-xs font-medium text-left transition-all ${!simulateSuccess ? "bg-gray-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}>
                     Fail — not verified yet
                   </button>
-                  <button
-                    onClick={() => setSimulateSuccess(true)}
-                    className={`w-full px-2 py-1.5 rounded text-xs font-medium text-left transition-all ${
-                      simulateSuccess ? "bg-emerald-700 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                    }`}
-                  >
+                  <button onClick={() => setSimulateSuccess(true)}
+                    className={`w-full px-2 py-1.5 rounded text-xs font-medium text-left transition-all ${simulateSuccess ? "bg-emerald-700 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}>
                     Success — DNS verified ✓
                   </button>
                 </div>
@@ -504,13 +490,8 @@ function DebugPanel({ state, setState, domain, setDomain, failureType, setFailur
                 <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Error variant</p>
                 <div className="space-y-1">
                   {["cname", "txt"].map(t => (
-                    <button
-                      key={t}
-                      onClick={() => setFailureType(t)}
-                      className={`w-full px-2 py-1.5 rounded text-xs font-medium text-left transition-all ${
-                        failureType === t ? "bg-red-700 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                      }`}
-                    >
+                    <button key={t} onClick={() => setFailureType(t)}
+                      className={`w-full px-2 py-1.5 rounded text-xs font-medium text-left transition-all ${failureType === t ? "bg-red-700 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}>
                       {t === "cname" ? "CNAME not found" : "TXT mismatch"}
                     </button>
                   ))}
@@ -519,10 +500,7 @@ function DebugPanel({ state, setState, domain, setDomain, failureType, setFailur
             )}
 
             <div className="border-t border-gray-800 pt-3">
-              <button
-                onClick={onReset}
-                className="w-full px-2 py-1.5 rounded text-xs font-medium bg-red-900/60 text-red-300 hover:bg-red-900 transition-all border border-red-800/50"
-              >
+              <button onClick={onReset} className="w-full px-2 py-1.5 rounded text-xs font-medium bg-red-900/60 text-red-300 hover:bg-red-900 transition-all border border-red-800/50">
                 Reset all
               </button>
             </div>
@@ -533,52 +511,46 @@ function DebugPanel({ state, setState, domain, setDomain, failureType, setFailur
   );
 }
 
+// ─── Step index per state ─────────────────────────────────────────────────────
+function getStepIndex(state) {
+  if (state === "form") return 0;
+  if (state === "pending" || state === "failed") return 1;
+  if (state === "ssl_provisioning") return 2;
+  if (state === "active") return 3;
+  return 0;
+}
+
+// ─── Main App ─────────────────────────────────────────────────────────────────
 function App() {
-  const [state, setState] = useState("empty");
+  const [state, setState] = useState("form");
   const [domain, setDomain] = useState("");
-  const [showForm, setShowForm] = useState(false);
   const [verifyToken] = useState(genToken);
   const [failureType, setFailureType] = useState("cname");
   const [simulateSuccess, setSimulateSuccess] = useState(false);
 
-  const gotoState = (s) => {
-    setState(s);
-    setShowForm(false);
-  };
+  const gotoState = (s) => setState(s);
 
   const handleSubmit = (d) => {
     setDomain(d);
-    setShowForm(false);
     setState("pending");
   };
 
-  const handleChangeDomain = () => {
-    setState("empty");
-    setShowForm(true);
-  };
-
-  const handleRemove = () => {
-    setState("empty");
-    setDomain("");
-    setShowForm(false);
-  };
+  const handleChangeDomain = () => setState("form");
+  const handleRemove = () => { setState("form"); setDomain(""); };
 
   const handleAutofill = () => {
     setDomain("shop.acme-corp.com");
-    if (state === "empty") setShowForm(true);
+    if (state === "form") setState("form");
   };
 
   const handleResetAutofill = () => {
-    setState("empty");
     setDomain("shop.acme-corp.com");
-    setShowForm(true);
+    setState("form");
   };
 
-  const handleReset = () => {
-    setState("empty");
-    setDomain("");
-    setShowForm(false);
-  };
+  const handleReset = () => { setState("form"); setDomain(""); };
+
+  const stepIndex = getStepIndex(state);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -597,19 +569,24 @@ function App() {
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Custom Domain</h1>
           <p className="text-sm text-gray-500">
             Your shop is currently at{" "}
-            <a className="mono text-blue-600 hover:underline underline-offset-2 text-xs" href="#">
-              example.swag42.shop
-            </a>
+            <a className="mono text-blue-600 hover:underline underline-offset-2 text-xs" href="#">example.swag42.shop</a>
           </p>
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 min-h-[320px]">
-          {state === "empty" && !showForm && <EmptyState onConnect={() => setShowForm(true)} />}
-          {state === "empty" && showForm && (
+          <Pipeline currentStep={stepIndex} failed={state === "failed"} />
+
+          {state === "form" && (
             <ConnectForm onSubmit={handleSubmit} initialDomain={domain} onAutofill={(d) => setDomain(d)} />
           )}
           {state === "pending" && (
-            <PendingState domain={domain || "shop.acme-corp.com"} verifyToken={verifyToken} onCheck={(success) => { if (success) setState("ssl_provisioning"); }} onChangeDomain={handleChangeDomain} simulateSuccess={simulateSuccess} />
+            <PendingState
+              domain={domain || "shop.acme-corp.com"}
+              verifyToken={verifyToken}
+              onCheck={(success) => { if (success) setState("ssl_provisioning"); }}
+              onChangeDomain={handleChangeDomain}
+              simulateSuccess={simulateSuccess}
+            />
           )}
           {state === "ssl_provisioning" && <SslProvisioningState domain={domain || "shop.acme-corp.com"} />}
           {state === "active" && <ActiveState domain={domain || "shop.acme-corp.com"} onRemove={handleRemove} />}
@@ -621,10 +598,9 @@ function App() {
 
       <DebugPanel
         state={state} setState={gotoState}
-        domain={domain} setDomain={setDomain}
         failureType={failureType} setFailureType={setFailureType}
-        onAutofill={handleAutofill} onResetAutofill={handleResetAutofill} onReset={handleReset}
         simulateSuccess={simulateSuccess} setSimulateSuccess={setSimulateSuccess}
+        onAutofill={handleAutofill} onResetAutofill={handleResetAutofill} onReset={handleReset}
       />
     </div>
   );
