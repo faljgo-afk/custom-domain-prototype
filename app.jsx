@@ -92,7 +92,7 @@ function EmptyState({ onConnect }) {
       </div>
       <h2 className="text-xl font-semibold text-gray-900 mb-2">Use your own domain</h2>
       <p className="text-gray-500 text-sm max-w-md leading-relaxed mb-8">
-        Connect a custom domain so your shop is accessible at <span className="mono text-gray-700">shop.yourcompany.com</span> instead of a Swag42 subdomain. SSL is provisioned automatically.
+        Connect a custom domain so your shop is accessible at <span className="mono text-gray-700">yourcompany.com</span> or <span className="mono text-gray-700">shop.yourcompany.com</span> instead of a Swag42 subdomain. SSL is provisioned automatically.
       </p>
       <button
         onClick={onConnect}
@@ -119,14 +119,14 @@ function ConnectForm({ onSubmit, initialDomain = "", onAutofill }) {
   return (
     <div className="fade-in max-w-lg">
       <h2 className="text-xl font-semibold text-gray-900 mb-1">Connect a custom domain</h2>
-      <p className="text-gray-500 text-sm mb-6">Enter the domain or subdomain you'd like to use for your shop.</p>
+      <p className="text-gray-500 text-sm mb-6">Enter the domain you'd like to use for your shop — root domain or subdomain.</p>
 
       <div className="mb-1">
         <label className="block text-sm font-medium text-gray-700 mb-1.5">Domain</label>
         <input
           type="text"
           value={value}
-          placeholder="shop.yourcompany.com"
+          placeholder="yourcompany.com"
           onChange={e => { setValue(e.target.value); setTouched(true); }}
           onBlur={() => setTouched(true)}
           className={`w-full mono px-3.5 py-2.5 text-sm rounded-lg border outline-none transition-all ${
@@ -183,7 +183,7 @@ function DnsRow({ label, fields }) {
   );
 }
 
-function PendingState({ domain, verifyToken, onCheck, onChangeDomain }) {
+function PendingState({ domain, verifyToken, onCheck, onChangeDomain, simulateSuccess }) {
   const [checking, setChecking] = useState(false);
   const [checkedOnce, setCheckedOnce] = useState(false);
 
@@ -193,8 +193,12 @@ function PendingState({ domain, verifyToken, onCheck, onChangeDomain }) {
     setChecking(true);
     setTimeout(() => {
       setChecking(false);
-      setCheckedOnce(true);
-      onCheck && onCheck();
+      if (simulateSuccess) {
+        onCheck && onCheck(true);
+      } else {
+        setCheckedOnce(true);
+        onCheck && onCheck(false);
+      }
     }, 2000);
   };
 
@@ -425,7 +429,7 @@ function FailedState({ domain, errorType, onChangeDomain }) {
   );
 }
 
-function DebugPanel({ state, setState, domain, setDomain, failureType, setFailureType, onAutofill, onResetAutofill, onReset }) {
+function DebugPanel({ state, setState, domain, setDomain, failureType, setFailureType, simulateSuccess, setSimulateSuccess, onAutofill, onResetAutofill, onReset }) {
   const [open, setOpen] = useState(true);
   const states = ["empty", "pending", "ssl_provisioning", "active", "failed"];
   const stateLabels = { empty: "Empty", pending: "Pending", ssl_provisioning: "SSL Provisioning", active: "Active", failed: "Failed" };
@@ -474,6 +478,30 @@ function DebugPanel({ state, setState, domain, setDomain, failureType, setFailur
               </div>
             </div>
 
+            {state === "pending" && (
+              <div className="fade-in">
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Check verification</p>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => setSimulateSuccess(false)}
+                    className={`w-full px-2 py-1.5 rounded text-xs font-medium text-left transition-all ${
+                      !simulateSuccess ? "bg-gray-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                    }`}
+                  >
+                    Fail — not verified yet
+                  </button>
+                  <button
+                    onClick={() => setSimulateSuccess(true)}
+                    className={`w-full px-2 py-1.5 rounded text-xs font-medium text-left transition-all ${
+                      simulateSuccess ? "bg-emerald-700 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                    }`}
+                  >
+                    Success — DNS verified ✓
+                  </button>
+                </div>
+              </div>
+            )}
+
             {state === "failed" && (
               <div className="fade-in">
                 <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Error variant</p>
@@ -514,6 +542,7 @@ function App() {
   const [showForm, setShowForm] = useState(false);
   const [verifyToken] = useState(genToken);
   const [failureType, setFailureType] = useState("cname");
+  const [simulateSuccess, setSimulateSuccess] = useState(false);
 
   const gotoState = (s) => {
     setState(s);
@@ -554,8 +583,6 @@ function App() {
     setShowForm(false);
   };
 
-  const currentShop = domain || "example";
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b border-gray-200">
@@ -574,7 +601,7 @@ function App() {
           <p className="text-sm text-gray-500">
             Your shop is currently at{" "}
             <a className="mono text-blue-600 hover:underline underline-offset-2 text-xs" href="#">
-              {currentShop}.swag42.shop
+              example.swag42.shop
             </a>
           </p>
         </div>
@@ -585,7 +612,7 @@ function App() {
             <ConnectForm onSubmit={handleSubmit} initialDomain={domain} onAutofill={(d) => setDomain(d)} />
           )}
           {state === "pending" && (
-            <PendingState domain={domain || "shop.acme-corp.com"} verifyToken={verifyToken} onCheck={() => {}} onChangeDomain={handleChangeDomain} />
+            <PendingState domain={domain || "shop.acme-corp.com"} verifyToken={verifyToken} onCheck={(success) => { if (success) setState("ssl_provisioning"); }} onChangeDomain={handleChangeDomain} simulateSuccess={simulateSuccess} />
           )}
           {state === "ssl_provisioning" && <SslProvisioningState domain={domain || "shop.acme-corp.com"} />}
           {state === "active" && <ActiveState domain={domain || "shop.acme-corp.com"} onRemove={handleRemove} />}
@@ -600,6 +627,7 @@ function App() {
         domain={domain} setDomain={setDomain}
         failureType={failureType} setFailureType={setFailureType}
         onAutofill={handleAutofill} onResetAutofill={handleResetAutofill} onReset={handleReset}
+        simulateSuccess={simulateSuccess} setSimulateSuccess={setSimulateSuccess}
       />
     </div>
   );

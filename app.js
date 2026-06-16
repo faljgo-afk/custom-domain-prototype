@@ -191,6 +191,8 @@ function EmptyState({
     className: "text-gray-500 text-sm max-w-md leading-relaxed mb-8"
   }, "Connect a custom domain so your shop is accessible at ", /*#__PURE__*/React.createElement("span", {
     className: "mono text-gray-700"
+  }, "yourcompany.com"), " or ", /*#__PURE__*/React.createElement("span", {
+    className: "mono text-gray-700"
   }, "shop.yourcompany.com"), " instead of a Swag42 subdomain. SSL is provisioned automatically."), /*#__PURE__*/React.createElement("button", {
     onClick: onConnect,
     className: "inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
@@ -216,14 +218,14 @@ function ConnectForm({
     className: "text-xl font-semibold text-gray-900 mb-1"
   }, "Connect a custom domain"), /*#__PURE__*/React.createElement("p", {
     className: "text-gray-500 text-sm mb-6"
-  }, "Enter the domain or subdomain you'd like to use for your shop."), /*#__PURE__*/React.createElement("div", {
+  }, "Enter the domain you'd like to use for your shop — root domain or subdomain."), /*#__PURE__*/React.createElement("div", {
     className: "mb-1"
   }, /*#__PURE__*/React.createElement("label", {
     className: "block text-sm font-medium text-gray-700 mb-1.5"
   }, "Domain"), /*#__PURE__*/React.createElement("input", {
     type: "text",
     value: value,
-    placeholder: "shop.yourcompany.com",
+    placeholder: "yourcompany.com",
     onChange: e => {
       setValue(e.target.value);
       setTouched(true);
@@ -273,7 +275,8 @@ function PendingState({
   domain,
   verifyToken,
   onCheck,
-  onChangeDomain
+  onChangeDomain,
+  simulateSuccess
 }) {
   const [checking, setChecking] = useState(false);
   const [checkedOnce, setCheckedOnce] = useState(false);
@@ -282,8 +285,12 @@ function PendingState({
     setChecking(true);
     setTimeout(() => {
       setChecking(false);
-      setCheckedOnce(true);
-      onCheck && onCheck();
+      if (simulateSuccess) {
+        onCheck && onCheck(true);
+      } else {
+        setCheckedOnce(true);
+        onCheck && onCheck(false);
+      }
     }, 2000);
   };
   return /*#__PURE__*/React.createElement("div", {
@@ -542,6 +549,8 @@ function DebugPanel({
   setDomain,
   failureType,
   setFailureType,
+  simulateSuccess,
+  setSimulateSuccess,
   onAutofill,
   onResetAutofill,
   onReset
@@ -586,7 +595,19 @@ function DebugPanel({
   }, "Autofill domain"), /*#__PURE__*/React.createElement("button", {
     onClick: onResetAutofill,
     className: "w-full px-2 py-1.5 rounded text-xs font-medium bg-gray-800 text-gray-300 hover:bg-gray-700 text-left"
-  }, "Reset & autofill"))), state === "failed" && /*#__PURE__*/React.createElement("div", {
+  }, "Reset & autofill"))), state === "pending" && /*#__PURE__*/React.createElement("div", {
+    className: "fade-in"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5"
+  }, "Check verification"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-1"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSimulateSuccess(false),
+    className: `w-full px-2 py-1.5 rounded text-xs font-medium text-left transition-all ${!simulateSuccess ? "bg-gray-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`
+  }, "Fail — not verified yet"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSimulateSuccess(true),
+    className: `w-full px-2 py-1.5 rounded text-xs font-medium text-left transition-all ${simulateSuccess ? "bg-emerald-700 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`
+  }, "Success — DNS verified ✓"))), state === "failed" && /*#__PURE__*/React.createElement("div", {
     className: "fade-in"
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5"
@@ -609,6 +630,7 @@ function App() {
   const [showForm, setShowForm] = useState(false);
   const [verifyToken] = useState(genToken);
   const [failureType, setFailureType] = useState("cname");
+  const [simulateSuccess, setSimulateSuccess] = useState(false);
   const gotoState = s => {
     setState(s);
     setShowForm(false);
@@ -641,7 +663,6 @@ function App() {
     setDomain("");
     setShowForm(false);
   };
-  const currentShop = domain || "example";
   return /*#__PURE__*/React.createElement("div", {
     className: "min-h-screen bg-gray-50"
   }, /*#__PURE__*/React.createElement("div", {
@@ -669,7 +690,7 @@ function App() {
   }, "Your shop is currently at", " ", /*#__PURE__*/React.createElement("a", {
     className: "mono text-blue-600 hover:underline underline-offset-2 text-xs",
     href: "#"
-  }, currentShop, ".swag42.shop"))), /*#__PURE__*/React.createElement("div", {
+  }, "example.swag42.shop"))), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-2xl border border-gray-200 shadow-sm p-8 min-h-[320px]"
   }, state === "empty" && !showForm && /*#__PURE__*/React.createElement(EmptyState, {
     onConnect: () => setShowForm(true)
@@ -680,8 +701,11 @@ function App() {
   }), state === "pending" && /*#__PURE__*/React.createElement(PendingState, {
     domain: domain || "shop.acme-corp.com",
     verifyToken: verifyToken,
-    onCheck: () => {},
-    onChangeDomain: handleChangeDomain
+    onCheck: success => {
+      if (success) setState("ssl_provisioning");
+    },
+    onChangeDomain: handleChangeDomain,
+    simulateSuccess: simulateSuccess
   }), state === "ssl_provisioning" && /*#__PURE__*/React.createElement(SslProvisioningState, {
     domain: domain || "shop.acme-corp.com"
   }), state === "active" && /*#__PURE__*/React.createElement(ActiveState, {
@@ -700,7 +724,9 @@ function App() {
     setFailureType: setFailureType,
     onAutofill: handleAutofill,
     onResetAutofill: handleResetAutofill,
-    onReset: handleReset
+    onReset: handleReset,
+    simulateSuccess: simulateSuccess,
+    setSimulateSuccess: setSimulateSuccess
   }));
 }
 ReactDOM.createRoot(document.getElementById("root")).render(/*#__PURE__*/React.createElement(App, null));
