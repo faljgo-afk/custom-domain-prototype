@@ -207,17 +207,40 @@ function CopyButton({
 function ConnectForm({
   onSubmit,
   initialDomain = "",
-  onAutofill
+  onAutofill,
+  simulateTaken
 }) {
   const [value, setValue] = useState(initialDomain);
   const [touched, setTouched] = useState(!!initialDomain);
-  const error = touched ? validateDomain(value) : null;
-  const isValid = error === "" && value.trim() !== "";
+  const [submitting, setSubmitting] = useState(false);
+  const [serverError, setServerError] = useState(null);
+  const validationError = touched ? validateDomain(value) : null;
+  const isValid = validationError === "" && value.trim() !== "";
   const handleAutofill = () => {
     setValue("shop.acme-corp.com");
     setTouched(true);
+    setServerError(null);
     onAutofill && onAutofill("shop.acme-corp.com");
   };
+  const handleChange = v => {
+    setValue(v);
+    setTouched(true);
+    setServerError(null);
+  };
+  const handleSubmit = () => {
+    if (!isValid) return;
+    setSubmitting(true);
+    setServerError(null);
+    setTimeout(() => {
+      setSubmitting(false);
+      if (simulateTaken) {
+        setServerError("taken");
+      } else {
+        onSubmit(value.trim());
+      }
+    }, 900);
+  };
+  const hasError = validationError && touched || serverError;
   return /*#__PURE__*/React.createElement("div", {
     className: "fade-in max-w-lg"
   }, /*#__PURE__*/React.createElement("h2", {
@@ -236,24 +259,31 @@ function ConnectForm({
     type: "text",
     value: value,
     placeholder: "yourcompany.com",
-    onChange: e => {
-      setValue(e.target.value);
-      setTouched(true);
-    },
+    onChange: e => handleChange(e.target.value),
     onBlur: () => setTouched(true),
-    className: `w-full mono px-3.5 py-2.5 text-sm rounded-lg border outline-none transition-all ${error && touched ? "border-red-400 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100"}`
-  }), touched && error && /*#__PURE__*/React.createElement("p", {
+    className: `w-full mono px-3.5 py-2.5 text-sm rounded-lg border outline-none transition-all ${hasError ? "border-red-400 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100"}`
+  }), touched && validationError && !serverError && /*#__PURE__*/React.createElement("p", {
     className: "mt-1.5 text-xs text-red-500"
-  }, error)), /*#__PURE__*/React.createElement("button", {
+  }, validationError), serverError === "taken" && /*#__PURE__*/React.createElement("div", {
+    className: "mt-1.5 fade-in"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-red-500"
+  }, "This domain is already connected to another shop.", " ", /*#__PURE__*/React.createElement("a", {
+    href: "#",
+    className: "underline underline-offset-2 hover:text-red-600"
+  }, "Contact support"), " ", "if you believe this is a mistake."))), /*#__PURE__*/React.createElement("button", {
     onClick: handleAutofill,
     className: "text-xs text-blue-600 hover:text-blue-700 mt-2 mb-6 underline-offset-2 hover:underline"
   }, "Fill with test data"), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-3"
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => isValid && onSubmit(value.trim()),
-    disabled: !isValid,
-    className: `px-5 py-2.5 text-sm font-medium rounded-lg transition-all ${isValid ? "bg-gray-900 text-white hover:bg-gray-800" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`
-  }, "Continue")));
+    onClick: handleSubmit,
+    disabled: !isValid || submitting,
+    className: `inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg transition-all ${isValid && !submitting ? "bg-gray-900 text-white hover:bg-gray-800" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`
+  }, submitting && /*#__PURE__*/React.createElement(IconSpinner, {
+    size: 4,
+    color: "text-gray-400"
+  }), submitting ? "Checking…" : "Continue")));
 }
 function DnsRow({
   label,
@@ -616,6 +646,8 @@ function DebugPanel({
   setFailureType,
   simulateSuccess,
   setSimulateSuccess,
+  simulateTaken,
+  setSimulateTaken,
   onAutofill,
   onResetAutofill,
   onReset
@@ -660,7 +692,19 @@ function DebugPanel({
   }, "Autofill domain"), /*#__PURE__*/React.createElement("button", {
     onClick: onResetAutofill,
     className: "w-full px-2 py-1.5 rounded text-xs font-medium bg-gray-800 text-gray-300 hover:bg-gray-700 text-left"
-  }, "Reset & autofill"))), state === "pending" && /*#__PURE__*/React.createElement("div", {
+  }, "Reset & autofill"))), state === "form" && /*#__PURE__*/React.createElement("div", {
+    className: "fade-in"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5"
+  }, "Continue response"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-1"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSimulateTaken(false),
+    className: `w-full px-2 py-1.5 rounded text-xs font-medium text-left transition-all ${!simulateTaken ? "bg-gray-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`
+  }, "Success — proceed to DNS"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSimulateTaken(true),
+    className: `w-full px-2 py-1.5 rounded text-xs font-medium text-left transition-all ${simulateTaken ? "bg-red-700 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`
+  }, "Error — domain taken"))), state === "pending" && /*#__PURE__*/React.createElement("div", {
     className: "fade-in"
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5"
@@ -724,6 +768,7 @@ function App() {
   const [verifyToken] = useState(genToken);
   const [failureType, setFailureType] = useState("cname_not_found");
   const [simulateSuccess, setSimulateSuccess] = useState(false);
+  const [simulateTaken, setSimulateTaken] = useState(false);
   const gotoState = s => setState(s);
   const handleSubmit = d => {
     setDomain(d);
@@ -782,7 +827,8 @@ function App() {
   }), state === "form" && /*#__PURE__*/React.createElement(ConnectForm, {
     onSubmit: handleSubmit,
     initialDomain: domain,
-    onAutofill: d => setDomain(d)
+    onAutofill: d => setDomain(d),
+    simulateTaken: simulateTaken
   }), state === "pending" && /*#__PURE__*/React.createElement(PendingState, {
     domain: domain || "shop.acme-corp.com",
     verifyToken: verifyToken,
@@ -809,7 +855,9 @@ function App() {
     setSimulateSuccess: setSimulateSuccess,
     onAutofill: handleAutofill,
     onResetAutofill: handleResetAutofill,
-    onReset: handleReset
+    onReset: handleReset,
+    simulateTaken: simulateTaken,
+    setSimulateTaken: setSimulateTaken
   }));
 }
 ReactDOM.createRoot(document.getElementById("root")).render(/*#__PURE__*/React.createElement(App, null));

@@ -124,17 +124,42 @@ function CopyButton({ value }) {
 
 // ─── State views ──────────────────────────────────────────────────────────────
 
-function ConnectForm({ onSubmit, initialDomain = "", onAutofill }) {
+function ConnectForm({ onSubmit, initialDomain = "", onAutofill, simulateTaken }) {
   const [value, setValue] = useState(initialDomain);
   const [touched, setTouched] = useState(!!initialDomain);
-  const error = touched ? validateDomain(value) : null;
-  const isValid = error === "" && value.trim() !== "";
+  const [submitting, setSubmitting] = useState(false);
+  const [serverError, setServerError] = useState(null);
+  const validationError = touched ? validateDomain(value) : null;
+  const isValid = validationError === "" && value.trim() !== "";
 
   const handleAutofill = () => {
     setValue("shop.acme-corp.com");
     setTouched(true);
+    setServerError(null);
     onAutofill && onAutofill("shop.acme-corp.com");
   };
+
+  const handleChange = (v) => {
+    setValue(v);
+    setTouched(true);
+    setServerError(null);
+  };
+
+  const handleSubmit = () => {
+    if (!isValid) return;
+    setSubmitting(true);
+    setServerError(null);
+    setTimeout(() => {
+      setSubmitting(false);
+      if (simulateTaken) {
+        setServerError("taken");
+      } else {
+        onSubmit(value.trim());
+      }
+    }, 900);
+  };
+
+  const hasError = (validationError && touched) || serverError;
 
   return (
     <div className="fade-in max-w-lg">
@@ -149,16 +174,25 @@ function ConnectForm({ onSubmit, initialDomain = "", onAutofill }) {
           type="text"
           value={value}
           placeholder="yourcompany.com"
-          onChange={e => { setValue(e.target.value); setTouched(true); }}
+          onChange={e => handleChange(e.target.value)}
           onBlur={() => setTouched(true)}
           className={`w-full mono px-3.5 py-2.5 text-sm rounded-lg border outline-none transition-all ${
-            error && touched
+            hasError
               ? "border-red-400 bg-red-50 focus:ring-2 focus:ring-red-200"
               : "border-gray-300 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
           }`}
         />
-        {touched && error && (
-          <p className="mt-1.5 text-xs text-red-500">{error}</p>
+        {touched && validationError && !serverError && (
+          <p className="mt-1.5 text-xs text-red-500">{validationError}</p>
+        )}
+        {serverError === "taken" && (
+          <div className="mt-1.5 fade-in">
+            <p className="text-xs text-red-500">
+              This domain is already connected to another shop.{" "}
+              <a href="#" className="underline underline-offset-2 hover:text-red-600">Contact support</a>{" "}
+              if you believe this is a mistake.
+            </p>
+          </div>
         )}
       </div>
 
@@ -171,15 +205,16 @@ function ConnectForm({ onSubmit, initialDomain = "", onAutofill }) {
 
       <div className="flex items-center gap-3">
         <button
-          onClick={() => isValid && onSubmit(value.trim())}
-          disabled={!isValid}
-          className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-all ${
-            isValid
+          onClick={handleSubmit}
+          disabled={!isValid || submitting}
+          className={`inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg transition-all ${
+            isValid && !submitting
               ? "bg-gray-900 text-white hover:bg-gray-800"
               : "bg-gray-100 text-gray-400 cursor-not-allowed"
           }`}
         >
-          Continue
+          {submitting && <IconSpinner size={4} color="text-gray-400" />}
+          {submitting ? "Checking…" : "Continue"}
         </button>
       </div>
     </div>
@@ -490,7 +525,7 @@ function FailedState({ domain, errorType, onChangeDomain }) {
 }
 
 // ─── Debug Panel ──────────────────────────────────────────────────────────────
-function DebugPanel({ state, setState, failureType, setFailureType, simulateSuccess, setSimulateSuccess, onAutofill, onResetAutofill, onReset }) {
+function DebugPanel({ state, setState, failureType, setFailureType, simulateSuccess, setSimulateSuccess, simulateTaken, setSimulateTaken, onAutofill, onResetAutofill, onReset }) {
   const [open, setOpen] = useState(true);
   const states = ["form", "pending", "ssl_provisioning", "active", "failed"];
   const stateLabels = { form: "Form", pending: "Pending", ssl_provisioning: "SSL Provisioning", active: "Active", failed: "Failed" };
@@ -524,6 +559,22 @@ function DebugPanel({ state, setState, failureType, setFailureType, simulateSucc
                 <button onClick={onResetAutofill} className="w-full px-2 py-1.5 rounded text-xs font-medium bg-gray-800 text-gray-300 hover:bg-gray-700 text-left">Reset & autofill</button>
               </div>
             </div>
+
+            {state === "form" && (
+              <div className="fade-in">
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Continue response</p>
+                <div className="space-y-1">
+                  <button onClick={() => setSimulateTaken(false)}
+                    className={`w-full px-2 py-1.5 rounded text-xs font-medium text-left transition-all ${!simulateTaken ? "bg-gray-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}>
+                    Success — proceed to DNS
+                  </button>
+                  <button onClick={() => setSimulateTaken(true)}
+                    className={`w-full px-2 py-1.5 rounded text-xs font-medium text-left transition-all ${simulateTaken ? "bg-red-700 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}>
+                    Error — domain taken
+                  </button>
+                </div>
+              </div>
+            )}
 
             {state === "pending" && (
               <div className="fade-in">
@@ -589,6 +640,7 @@ function App() {
   const [verifyToken] = useState(genToken);
   const [failureType, setFailureType] = useState("cname_not_found");
   const [simulateSuccess, setSimulateSuccess] = useState(false);
+  const [simulateTaken, setSimulateTaken] = useState(false);
 
   const gotoState = (s) => setState(s);
 
@@ -641,7 +693,7 @@ function App() {
           <Pipeline currentStep={stepIndex} failed={state === "failed"} />
 
           {state === "form" && (
-            <ConnectForm onSubmit={handleSubmit} initialDomain={domain} onAutofill={(d) => setDomain(d)} />
+            <ConnectForm onSubmit={handleSubmit} initialDomain={domain} onAutofill={(d) => setDomain(d)} simulateTaken={simulateTaken} />
           )}
           {state === "pending" && (
             <PendingState
@@ -665,6 +717,7 @@ function App() {
         failureType={failureType} setFailureType={setFailureType}
         simulateSuccess={simulateSuccess} setSimulateSuccess={setSimulateSuccess}
         onAutofill={handleAutofill} onResetAutofill={handleResetAutofill} onReset={handleReset}
+        simulateTaken={simulateTaken} setSimulateTaken={setSimulateTaken}
       />
     </div>
   );
