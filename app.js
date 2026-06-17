@@ -268,10 +268,7 @@ function ConnectForm({
     className: "mt-1.5 fade-in"
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-red-500"
-  }, "This domain is already connected to another shop.", " ", /*#__PURE__*/React.createElement("a", {
-    href: "#",
-    className: "underline underline-offset-2 hover:text-red-600"
-  }, "Contact support"), " ", "if you believe this is a mistake."))), /*#__PURE__*/React.createElement("button", {
+  }, "This domain is already connected to another shop."))), /*#__PURE__*/React.createElement("button", {
     onClick: handleAutofill,
     className: "text-xs text-blue-600 hover:text-blue-700 mt-2 mb-6 underline-offset-2 hover:underline"
   }, "Fill with test data"), /*#__PURE__*/React.createElement("div", {

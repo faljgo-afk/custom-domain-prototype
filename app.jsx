@@ -187,11 +187,7 @@ function ConnectForm({ onSubmit, initialDomain = "", onAutofill, simulateTaken }
         )}
         {serverError === "taken" && (
           <div className="mt-1.5 fade-in">
-            <p className="text-xs text-red-500">
-              This domain is already connected to another shop.{" "}
-              <a href="#" className="underline underline-offset-2 hover:text-red-600">Contact support</a>{" "}
-              if you believe this is a mistake.
-            </p>
+            <p className="text-xs text-red-500">This domain is already connected to another shop.</p>
           </div>
         )}
       </div>
