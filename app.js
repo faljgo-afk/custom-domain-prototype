@@ -494,12 +494,70 @@ function ActiveState({
     className: "px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600"
   }, "Remove")))));
 }
+const DNS_ERRORS = new Set(["cname_not_found", "txt_not_found", "txt_mismatch"]);
 function FailedState({
   domain,
   errorType,
   onChangeDomain
 }) {
-  const isCname = errorType === "cname";
+  const isDnsError = DNS_ERRORS.has(errorType);
+  const cnameOk = errorType !== "cname_not_found";
+  const txtStatus = errorType === "txt_not_found" ? {
+    ok: false,
+    msg: "TXT record not found. Make sure the record has been added and propagated."
+  } : errorType === "txt_mismatch" ? {
+    ok: false,
+    msg: "TXT record found but the value doesn't match. Double-check the verification token."
+  } : {
+    ok: true,
+    msg: "Verification token matches."
+  };
+  if (!isDnsError) {
+    const isTimeout = errorType === "ssl_timeout";
+    return /*#__PURE__*/React.createElement("div", {
+      className: "fade-in max-w-xl"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "bg-red-50 border border-red-200 rounded-xl px-4 py-4 mb-5"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-2 mb-3"
+    }, /*#__PURE__*/React.createElement(IconX, {
+      size: 4
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "text-sm font-semibold text-red-700"
+    }, isTimeout ? "SSL provisioning timed out" : "SSL certificate failed")), /*#__PURE__*/React.createElement("p", {
+      className: "text-xs text-red-600 leading-relaxed"
+    }, isTimeout ? "SSL provisioning took too long and was cancelled. Your DNS records are correct — try again to restart the process." : "An error occurred while issuing the SSL certificate for ", !isTimeout && /*#__PURE__*/React.createElement("span", {
+      className: "mono"
+    }, domain), !isTimeout && ". Your DNS records are correct — try again to restart the process.")), /*#__PURE__*/React.createElement("div", {
+      className: "space-y-2 mb-6"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-start gap-3 px-4 py-3 rounded-xl border border-emerald-200 bg-emerald-50"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "mt-0.5"
+    }, /*#__PURE__*/React.createElement(IconCheck, {
+      size: 4,
+      color: "text-emerald-500"
+    })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+      className: "text-sm font-medium text-emerald-700"
+    }, "DNS verified"), /*#__PURE__*/React.createElement("p", {
+      className: "text-xs mt-0.5 text-emerald-500"
+    }, "CNAME and TXT records are configured correctly."))), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-start gap-3 px-4 py-3 rounded-xl border border-red-200 bg-red-50"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "mt-0.5"
+    }, /*#__PURE__*/React.createElement(IconX, {
+      size: 4
+    })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+      className: "text-sm font-medium text-red-700"
+    }, "SSL certificate"), /*#__PURE__*/React.createElement("p", {
+      className: "text-xs mt-0.5 text-red-500"
+    }, isTimeout ? "Provisioning timed out after 10 minutes." : "Certificate issuance failed. This may be a temporary issue.")))), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-4"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: onChangeDomain,
+      className: "px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800"
+    }, "Try again")));
+  }
   return /*#__PURE__*/React.createElement("div", {
     className: "fade-in max-w-xl"
   }, /*#__PURE__*/React.createElement("div", {
@@ -517,32 +575,32 @@ function FailedState({
   }, domain), ". Check the details below and update your DNS records.")), /*#__PURE__*/React.createElement("div", {
     className: "space-y-2 mb-6"
   }, /*#__PURE__*/React.createElement("div", {
-    className: `flex items-start gap-3 px-4 py-3 rounded-xl border ${isCname ? "border-red-200 bg-red-50" : "border-emerald-200 bg-emerald-50"}`
+    className: `flex items-start gap-3 px-4 py-3 rounded-xl border ${!cnameOk ? "border-red-200 bg-red-50" : "border-emerald-200 bg-emerald-50"}`
   }, /*#__PURE__*/React.createElement("div", {
     className: "mt-0.5"
-  }, isCname ? /*#__PURE__*/React.createElement(IconX, {
+  }, !cnameOk ? /*#__PURE__*/React.createElement(IconX, {
     size: 4
   }) : /*#__PURE__*/React.createElement(IconCheck, {
     size: 4,
     color: "text-emerald-500"
   })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
-    className: `text-sm font-medium ${isCname ? "text-red-700" : "text-emerald-700"}`
+    className: `text-sm font-medium ${!cnameOk ? "text-red-700" : "text-emerald-700"}`
   }, "CNAME record"), /*#__PURE__*/React.createElement("p", {
-    className: `text-xs mt-0.5 ${isCname ? "text-red-500" : "text-emerald-500"}`
-  }, isCname ? "CNAME record not found. Make sure the record is published and has propagated." : "Record found and resolves correctly."))), /*#__PURE__*/React.createElement("div", {
-    className: `flex items-start gap-3 px-4 py-3 rounded-xl border ${!isCname ? "border-red-200 bg-red-50" : "border-emerald-200 bg-emerald-50"}`
+    className: `text-xs mt-0.5 ${!cnameOk ? "text-red-500" : "text-emerald-500"}`
+  }, !cnameOk ? "CNAME record not found. Make sure the record is published and has propagated." : "Record found and resolves correctly."))), /*#__PURE__*/React.createElement("div", {
+    className: `flex items-start gap-3 px-4 py-3 rounded-xl border ${!txtStatus.ok ? "border-red-200 bg-red-50" : "border-emerald-200 bg-emerald-50"}`
   }, /*#__PURE__*/React.createElement("div", {
     className: "mt-0.5"
-  }, !isCname ? /*#__PURE__*/React.createElement(IconX, {
+  }, !txtStatus.ok ? /*#__PURE__*/React.createElement(IconX, {
     size: 4
   }) : /*#__PURE__*/React.createElement(IconCheck, {
     size: 4,
     color: "text-emerald-500"
   })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
-    className: `text-sm font-medium ${!isCname ? "text-red-700" : "text-emerald-700"}`
+    className: `text-sm font-medium ${!txtStatus.ok ? "text-red-700" : "text-emerald-700"}`
   }, "TXT verification record"), /*#__PURE__*/React.createElement("p", {
-    className: `text-xs mt-0.5 ${!isCname ? "text-red-500" : "text-emerald-500"}`
-  }, !isCname ? "TXT record found but the value doesn't match. Double-check the verification token." : "Verification token matches.")))), /*#__PURE__*/React.createElement("div", {
+    className: `text-xs mt-0.5 ${!txtStatus.ok ? "text-red-500" : "text-emerald-500"}`
+  }, txtStatus.msg)))), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-4"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onChangeDomain,
@@ -620,11 +678,29 @@ function DebugPanel({
     className: "text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5"
   }, "Error variant"), /*#__PURE__*/React.createElement("div", {
     className: "space-y-1"
-  }, ["cname", "txt"].map(t => /*#__PURE__*/React.createElement("button", {
-    key: t,
-    onClick: () => setFailureType(t),
-    className: `w-full px-2 py-1.5 rounded text-xs font-medium text-left transition-all ${failureType === t ? "bg-red-700 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`
-  }, t === "cname" ? "CNAME not found" : "TXT mismatch")))), /*#__PURE__*/React.createElement("div", {
+  }, [{
+    value: "cname_not_found",
+    label: "CNAME not found"
+  }, {
+    value: "txt_not_found",
+    label: "TXT not found"
+  }, {
+    value: "txt_mismatch",
+    label: "TXT mismatch"
+  }, {
+    value: "ssl_failed",
+    label: "SSL failed"
+  }, {
+    value: "ssl_timeout",
+    label: "SSL timeout"
+  }].map(({
+    value,
+    label
+  }) => /*#__PURE__*/React.createElement("button", {
+    key: value,
+    onClick: () => setFailureType(value),
+    className: `w-full px-2 py-1.5 rounded text-xs font-medium text-left transition-all ${failureType === value ? "bg-red-700 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`
+  }, label)))), /*#__PURE__*/React.createElement("div", {
     className: "border-t border-gray-800 pt-3"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onReset,
@@ -646,7 +722,7 @@ function App() {
   const [state, setState] = useState("form");
   const [domain, setDomain] = useState("");
   const [verifyToken] = useState(genToken);
-  const [failureType, setFailureType] = useState("cname");
+  const [failureType, setFailureType] = useState("cname_not_found");
   const [simulateSuccess, setSimulateSuccess] = useState(false);
   const gotoState = s => setState(s);
   const handleSubmit = d => {

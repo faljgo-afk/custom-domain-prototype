@@ -388,8 +388,66 @@ function ActiveState({ domain, onRemove }) {
   );
 }
 
+const DNS_ERRORS = new Set(["cname_not_found", "txt_not_found", "txt_mismatch"]);
+
 function FailedState({ domain, errorType, onChangeDomain }) {
-  const isCname = errorType === "cname";
+  const isDnsError = DNS_ERRORS.has(errorType);
+
+  const cnameOk = errorType !== "cname_not_found";
+  const txtStatus = errorType === "txt_not_found"
+    ? { ok: false, msg: "TXT record not found. Make sure the record has been added and propagated." }
+    : errorType === "txt_mismatch"
+    ? { ok: false, msg: "TXT record found but the value doesn't match. Double-check the verification token." }
+    : { ok: true, msg: "Verification token matches." };
+
+  if (!isDnsError) {
+    const isTimeout = errorType === "ssl_timeout";
+    return (
+      <div className="fade-in max-w-xl">
+        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-4 mb-5">
+          <div className="flex items-center gap-2 mb-3">
+            <IconX size={4} />
+            <span className="text-sm font-semibold text-red-700">
+              {isTimeout ? "SSL provisioning timed out" : "SSL certificate failed"}
+            </span>
+          </div>
+          <p className="text-xs text-red-600 leading-relaxed">
+            {isTimeout
+              ? "SSL provisioning took too long and was cancelled. Your DNS records are correct — try again to restart the process."
+              : "An error occurred while issuing the SSL certificate for " }
+            {!isTimeout && <span className="mono">{domain}</span>}
+            {!isTimeout && ". Your DNS records are correct — try again to restart the process."}
+          </p>
+        </div>
+
+        <div className="space-y-2 mb-6">
+          <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-emerald-200 bg-emerald-50">
+            <div className="mt-0.5"><IconCheck size={4} color="text-emerald-500" /></div>
+            <div>
+              <p className="text-sm font-medium text-emerald-700">DNS verified</p>
+              <p className="text-xs mt-0.5 text-emerald-500">CNAME and TXT records are configured correctly.</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-red-200 bg-red-50">
+            <div className="mt-0.5"><IconX size={4} /></div>
+            <div>
+              <p className="text-sm font-medium text-red-700">SSL certificate</p>
+              <p className="text-xs mt-0.5 text-red-500">
+                {isTimeout ? "Provisioning timed out after 10 minutes." : "Certificate issuance failed. This may be a temporary issue."}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <button onClick={onChangeDomain} className="px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800">
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fade-in max-w-xl">
       <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-4 mb-5">
@@ -403,23 +461,21 @@ function FailedState({ domain, errorType, onChangeDomain }) {
       </div>
 
       <div className="space-y-2 mb-6">
-        <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border ${isCname ? "border-red-200 bg-red-50" : "border-emerald-200 bg-emerald-50"}`}>
-          <div className="mt-0.5">{isCname ? <IconX size={4} /> : <IconCheck size={4} color="text-emerald-500" />}</div>
+        <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border ${!cnameOk ? "border-red-200 bg-red-50" : "border-emerald-200 bg-emerald-50"}`}>
+          <div className="mt-0.5">{!cnameOk ? <IconX size={4} /> : <IconCheck size={4} color="text-emerald-500" />}</div>
           <div>
-            <p className={`text-sm font-medium ${isCname ? "text-red-700" : "text-emerald-700"}`}>CNAME record</p>
-            <p className={`text-xs mt-0.5 ${isCname ? "text-red-500" : "text-emerald-500"}`}>
-              {isCname ? "CNAME record not found. Make sure the record is published and has propagated." : "Record found and resolves correctly."}
+            <p className={`text-sm font-medium ${!cnameOk ? "text-red-700" : "text-emerald-700"}`}>CNAME record</p>
+            <p className={`text-xs mt-0.5 ${!cnameOk ? "text-red-500" : "text-emerald-500"}`}>
+              {!cnameOk ? "CNAME record not found. Make sure the record is published and has propagated." : "Record found and resolves correctly."}
             </p>
           </div>
         </div>
 
-        <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border ${!isCname ? "border-red-200 bg-red-50" : "border-emerald-200 bg-emerald-50"}`}>
-          <div className="mt-0.5">{!isCname ? <IconX size={4} /> : <IconCheck size={4} color="text-emerald-500" />}</div>
+        <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border ${!txtStatus.ok ? "border-red-200 bg-red-50" : "border-emerald-200 bg-emerald-50"}`}>
+          <div className="mt-0.5">{!txtStatus.ok ? <IconX size={4} /> : <IconCheck size={4} color="text-emerald-500" />}</div>
           <div>
-            <p className={`text-sm font-medium ${!isCname ? "text-red-700" : "text-emerald-700"}`}>TXT verification record</p>
-            <p className={`text-xs mt-0.5 ${!isCname ? "text-red-500" : "text-emerald-500"}`}>
-              {!isCname ? "TXT record found but the value doesn't match. Double-check the verification token." : "Verification token matches."}
-            </p>
+            <p className={`text-sm font-medium ${!txtStatus.ok ? "text-red-700" : "text-emerald-700"}`}>TXT verification record</p>
+            <p className={`text-xs mt-0.5 ${!txtStatus.ok ? "text-red-500" : "text-emerald-500"}`}>{txtStatus.msg}</p>
           </div>
         </div>
       </div>
@@ -489,10 +545,16 @@ function DebugPanel({ state, setState, failureType, setFailureType, simulateSucc
               <div className="fade-in">
                 <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Error variant</p>
                 <div className="space-y-1">
-                  {["cname", "txt"].map(t => (
-                    <button key={t} onClick={() => setFailureType(t)}
-                      className={`w-full px-2 py-1.5 rounded text-xs font-medium text-left transition-all ${failureType === t ? "bg-red-700 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}>
-                      {t === "cname" ? "CNAME not found" : "TXT mismatch"}
+                  {[
+                    { value: "cname_not_found", label: "CNAME not found" },
+                    { value: "txt_not_found",   label: "TXT not found" },
+                    { value: "txt_mismatch",    label: "TXT mismatch" },
+                    { value: "ssl_failed",      label: "SSL failed" },
+                    { value: "ssl_timeout",     label: "SSL timeout" },
+                  ].map(({ value, label }) => (
+                    <button key={value} onClick={() => setFailureType(value)}
+                      className={`w-full px-2 py-1.5 rounded text-xs font-medium text-left transition-all ${failureType === value ? "bg-red-700 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}>
+                      {label}
                     </button>
                   ))}
                 </div>
@@ -525,7 +587,7 @@ function App() {
   const [state, setState] = useState("form");
   const [domain, setDomain] = useState("");
   const [verifyToken] = useState(genToken);
-  const [failureType, setFailureType] = useState("cname");
+  const [failureType, setFailureType] = useState("cname_not_found");
   const [simulateSuccess, setSimulateSuccess] = useState(false);
 
   const gotoState = (s) => setState(s);
